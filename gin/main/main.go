@@ -14,9 +14,20 @@ func (t T) toString() {
 	log.Println("-----------------------")
 }
 
+func setStatic(r *gin.Engine) {
+
+	r.Static("/assets", "web/assets")
+	r.LoadHTMLGlob("web/page/*")
+}
+
 func main() {
 
 	r := gin.Default()
+	setStatic(r)
+
+	r.GET("index", func(context *gin.Context) {
+		context.HTML(200, "index.html", nil)
+	})
 
 	// 127.0.0.1/index/999?www=444
 	r.POST("/index/:ppp", func(c *gin.Context) {
