@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -20,9 +21,34 @@ func setStatic(r *gin.Engine) {
 	r.LoadHTMLGlob("web/page/*")
 }
 
+func MyLogger() gin.HandlerFunc {
+	return func(context *gin.Context) {
+		// 这里也是我们自己的组件
+		fmt.Println("自己的组件")
+	}
+}
+
+// Default 这里就是gin框架的实现
+func Default() *gin.Engine {
+	engine := gin.New()
+	// gin默认挂载了logger和recovery组件
+	engine.Use(gin.Logger(), gin.Recovery())
+	// 我们也可以挂载自己的中间件
+	engine.Use(func(c *gin.Context) {
+		// 这里就是我们自己的组件
+		fmt.Println("自己的组件")
+		//	 这里面可以做一些拦截，处理一些逻辑
+	})
+	// 我们也可以仿官方写
+	engine.Use(MyLogger())
+
+	return engine
+}
+
 func main() {
 
-	r := gin.Default()
+	//r := gin.Default()
+	r := Default()
 	setStatic(r)
 
 	r.GET("index", func(context *gin.Context) {
