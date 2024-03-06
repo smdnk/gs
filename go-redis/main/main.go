@@ -1,19 +1,16 @@
 package main
 
-import (
-	"context"
-	"github.com/redis/go-redis/v9"
-)
-
 func main() {
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "192.168.0.6:6379",
-		Password: "", // 没有密码，默认值
-		DB:       0,  // 默认DB 0
-	})
-	ctx := context.Background()
 	s := rdb.Ping(ctx).String()
+
+	// getKey
 	val, _ := rdb.Get(ctx, "11").Result()
-	print(val, s)
+	// setKey
+	rdb.Set(ctx, "key-1", "value", 0) // 0不过期
+
+	// Do 可以直接执行redis原生命令
+	result, _ := rdb.Do(ctx, "get", "key-1").Result()
+
+	print(val, s, result)
 }
