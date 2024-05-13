@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"golang.org/x/net/webdav"
@@ -22,10 +21,6 @@ func main() {
 	fs := &minioFS{
 		client: minioClient,
 	}
-
-	fs.Mkdir(context.Background(), "/documents", 0755)
-	fs.Mkdir(context.Background(), "/images", 0755)
-	fs.Mkdir(context.Background(), "/videos", 0755)
 
 	// 创建一个新的WebDAV处理器
 	handler := &webdav.Handler{

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/minio/minio-go/v7"
 	"os"
@@ -45,5 +46,11 @@ func (f *minioFile) Readdir(count int) ([]os.FileInfo, error) {
 func (f *minioFile) Stat() (os.FileInfo, error) {
 	// 获取MinIO文件信息的操作
 	fmt.Println("minio Stat")
-	return nil, nil
+
+	objInfo, err := f.client.StatObject(context.Background(), "test", f.name, minio.StatObjectOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &minioFileInfo{objInfo}, nil
 }
