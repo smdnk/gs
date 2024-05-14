@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/minio/minio-go/v7"
-	"golang.org/x/net/webdav"
+	"gs/webdav"
 	"os"
 )
 

@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"golang.org/x/net/webdav"
+	"gs/webdav"
 	"log"
 	"net/http"
 )
