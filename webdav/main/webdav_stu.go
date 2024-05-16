@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// 初始化MinIO客户端
-	minioClient, err := minio.New("192.168.0.6:9000", &minio.Options{
+	minioClient, err := minio.New("minioapi.smdnk.cn:80", &minio.Options{
 		Creds:  credentials.NewStaticV4("BFHpp7CcxnBKv58b4XSa", "yqysI79US6QpuTNlO1Y6bk7DSu4hlpmK9DKX7jR7", ""),
 		Secure: false, // 默认情况下，MinIO没有启用HTTPS，可以根据需要修改
 	})

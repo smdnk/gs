@@ -11,7 +11,7 @@ import (
 
 var accessKey = "BFHpp7CcxnBKv58b4XSa"
 var accessSecret = "yqysI79US6QpuTNlO1Y6bk7DSu4hlpmK9DKX7jR7"
-var endPoint = "192.168.0.6:9000" // minio地址,不能加http
+var endPoint = "minioapi.smdnk.cn:80" // minio地址,不能加http
 
 var minioClient = initMinioClient()
 
