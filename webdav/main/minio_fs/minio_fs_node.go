@@ -3,6 +3,7 @@ package minio_fs
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 	"github.com/minio/minio-go/v7"
 	"gs/webdav"
 	"net/http"
@@ -12,21 +13,23 @@ import (
 )
 
 type minioFSNode struct {
-	children  map[string]*minioFSNode
-	client    *minio.Client
-	nodeFlg   int
-	mu        sync.Mutex
-	data      []byte
-	mode      os.FileMode
-	modTime   time.Time
-	deadProps map[xml.Name]webdav.Property
+	children   map[string]*minioFSNode
+	client     *minio.Client
+	bucketName string
+	nodeFlg    int
+	mu         sync.Mutex
+	data       []byte
+	mode       os.FileMode
+	modTime    time.Time
+	deadProps  map[xml.Name]webdav.Property
 }
 
 func (n *minioFSNode) stat(name string) *minioFileInfo {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 
-	if len(name) > 0 {
+	size := int64(len(n.data))
+	if len(name) > 3 && n.mode == os.ModeDir {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		// 注意，ListObjects返回值是个channel，通过迭代来获取所有object
@@ -39,12 +42,22 @@ func (n *minioFSNode) stat(name string) *minioFileInfo {
 			if object.Err != nil {
 				panic(object.Err)
 			}
+			size += object.Size
 		}
+	}
+
+	if n.mode != os.ModeDir {
+		objInfo, err := n.client.StatObject(context.Background(), n.bucketName, name,
+			minio.StatObjectOptions{})
+		if err != nil {
+			fmt.Println(err)
+		}
+		size = objInfo.Size
 	}
 
 	return &minioFileInfo{
 		name:    name,
-		size:    int64(len(n.data)),
+		size:    size,
 		mode:    n.mode,
 		modTime: n.modTime,
 	}

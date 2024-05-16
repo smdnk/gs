@@ -25,6 +25,9 @@ func main() {
 	//dirFs := minio_dir.MinioDir{
 	//	DirName: "./",
 	//}
+	//mfs := webdav.NewMemFS()
+	//mfs.Mkdir(context.Background(), "test", fs.ModeDir)
+	//mfs.Mkdir(context.Background(), "liu", fs.ModeDir)
 
 	buckets, err := minioClient.ListBuckets(context.Background())
 	for _, bucket := range buckets {
@@ -33,8 +36,7 @@ func main() {
 
 	// 创建一个新的WebDAV处理器
 	handler := &webdav.Handler{
-		Prefix: "/",
-		//FileSystem: dirFs,
+		Prefix:     "/",
 		FileSystem: newMinioFS,
 		LockSystem: webdav.NewMemLS(),
 		Logger: func(r *http.Request, err error) {

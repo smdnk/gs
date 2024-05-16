@@ -3,6 +3,7 @@ package minio_fs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/minio/minio-go/v7"
 	"gs/webdav"
 	"os"
@@ -85,16 +86,6 @@ func (fs *MinioFS) walk(op, fullname string, f func(dir *minioFSNode, frag strin
 	return nil
 }
 
-// find returns the parent of the named node and the relative name fragment
-// from the parent to the child. For example, if finding "/foo/bar/baz" then
-// parent will be the node for "/foo/bar" and frag will be "baz".
-//
-// If the fullname names the root node, then parent, frag and err will be zero.
-//
-// find returns an error if the parent does not already exist or the parent
-// isn't a directory, but it will not return an error per se if the child does
-// not already exist. The error returned is either nil or an *os.PathError
-// whose Op is op.
 func (fs *MinioFS) find(op, fullname string) (parent *minioFSNode, frag string, err error) {
 	err = fs.walk(op, fullname, func(parent0 *minioFSNode, frag0 string, final bool) error {
 		if !final {
@@ -124,10 +115,11 @@ func (fs *MinioFS) Mkdir(ctx context.Context, name string, perm os.FileMode) err
 		return os.ErrExist
 	}
 	dir.children[frag] = &minioFSNode{
-		client:   fs.client,
-		children: make(map[string]*minioFSNode),
-		mode:     perm.Perm() | os.ModeDir,
-		modTime:  time.Now(),
+		client:     fs.client,
+		bucketName: name,
+		children:   make(map[string]*minioFSNode),
+		mode:       perm.Perm() | os.ModeDir,
+		modTime:    time.Now(),
 	}
 	// minio 新建文件夹
 	return nil
@@ -157,6 +149,28 @@ func (fs *MinioFS) OpenFile(ctx context.Context, name string, flag int, perm os.
 
 	} else {
 		n = dir.children[frag]
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		// 注意，ListObjects返回值是个channel，通过迭代来获取所有object
+		objectCh := dir.client.ListObjects(ctx, frag, minio.ListObjectsOptions{
+			Prefix:    "", // 通过该参数过滤以Prefix作为object key前缀的object
+			Recursive: true,
+		})
+		for object := range objectCh {
+			if object.Err != nil {
+				fmt.Println(object.Err)
+			}
+			n.children[object.Key] = &minioFSNode{
+				client:   dir.client,
+				nodeFlg:  1,
+				children: make(map[string]*minioFSNode),
+				mode:     0644,
+				modTime:  time.Now(),
+			}
+
+		}
+
 		if flag&(os.O_SYNC|os.O_APPEND) != 0 {
 			// memFile doesn't support these flags yet.
 			return nil, os.ErrInvalid

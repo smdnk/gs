@@ -314,7 +314,7 @@ func (fs *memFS) OpenFile(ctx context.Context, name string, flag int, perm os.Fi
 
 	children := make([]os.FileInfo, 0, len(n.children))
 	for cName, c := range n.children {
-		children = append(children, c.stat(cName))
+		children = append(children, c.stat(cName)) // c.stat 使用 FSNode 构建出 FileInfo
 	}
 	return &memFile{
 		n:                n,
