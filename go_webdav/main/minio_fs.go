@@ -12,11 +12,12 @@ import (
 )
 
 type MinioFS struct {
-	client         *minio.Client
-	mu             sync.Mutex
-	bucketList     map[string]*Bucket
-	bucketNameList []string
-	currentBucket  string
+	client             *minio.Client
+	mu                 sync.Mutex
+	bucketList         map[string]*Bucket
+	bucketNameList     []string
+	currentBucket      string
+	currentObjectNames []string
 }
 type Bucket struct {
 	bucketName string
@@ -97,17 +98,21 @@ func (fs *MinioFS) CurrentFileList(ctx context.Context, name string) ([]string, 
 		currentBucket := fs.bucketList[fs.currentBucket]
 		objects := currentBucket.objects
 
-		var fileList []string
+		var objectNames []string
 		for k, _ := range objects {
-			fileList = append(fileList, k)
+			objectNames = append(objectNames, k)
 		}
+		fs.currentObjectNames = objectNames
 
 		log.Println(name)
 
-		return fileList, nil
+		return objectNames, nil
 	}
 
 	// 如果是对象名字 返回对象信息
+	if contains := slices.Contains(fs.currentObjectNames, name); contains {
+
+	}
 
 	return nil, nil
 
