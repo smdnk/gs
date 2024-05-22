@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package webdav provides a WebDAV server implementation.
-package webdav // import "golang.org/x/net/webdav"
+package go_webdav // import "golang.org/x/net/webdav"
 
 import (
 	"errors"
@@ -172,14 +172,15 @@ func (h *Handler) confirmLocks(r *http.Request, src, dst string) (release func()
 }
 
 func (h *Handler) handleOptions(w http.ResponseWriter, r *http.Request) (status int, err error) {
-	reqPath, status, err := h.stripPrefix(r.URL.Path)
-	if err != nil {
-		return status, err
-	}
-	ctx := r.Context()
+	//reqPath, status, err := h.stripPrefix(r.URL.Path)
+	//if err != nil {
+	//	return status, err
+	//}
+	//ctx := r.Context()
 	allow := "OPTIONS, LOCK, PUT, MKCOL"
-	if fi, err := h.FileSystem.Stat(ctx, reqPath); err == nil {
-		if fi.IsDir() {
+	isDir := true
+	if err == nil {
+		if isDir {
 			allow = "OPTIONS, LOCK, DELETE, PROPPATCH, COPY, MOVE, UNLOCK, PROPFIND"
 		} else {
 			allow = "OPTIONS, LOCK, GET, HEAD, POST, DELETE, PROPPATCH, COPY, MOVE, UNLOCK, PROPFIND, PUT"
@@ -522,10 +523,12 @@ func (h *Handler) handleUnlock(w http.ResponseWriter, r *http.Request) (status i
 
 func (h *Handler) handlePropfind(w http.ResponseWriter, r *http.Request) (status int, err error) {
 	reqPath, status, err := h.stripPrefix(r.URL.Path)
+
 	if err != nil {
 		return status, err
 	}
 	ctx := r.Context()
+	h.FileSystem.SetCurrentBucket(ctx, reqPath)
 
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -572,14 +575,17 @@ func (h *Handler) handlePropfind(w http.ResponseWriter, r *http.Request) (status
 			return handlePropfindError(err, info)
 		}
 		href := path.Join(h.Prefix, reqPath)
-		if href != "/" && info.IsDir() {
+
+		isDir := true
+		if href != "/" && isDir {
 			href += "/"
 		}
 		return mw.write(makePropstatResponse(href, pstats))
 	}
 
-	walkErr := walkFn(reqPath, fi, nil)
+	//currentFileList, err := h.FileSystem.CurrentFileList(ctx, reqPath)
 
+	walkErr := walkFS(ctx, h.FileSystem, depth, reqPath, nil, walkFn)
 	closeErr := mw.close()
 	if walkErr != nil {
 		return http.StatusInternalServerError, walkErr

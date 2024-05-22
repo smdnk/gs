@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package webdav
+package go_webdav
 
 import (
 	"bytes"
@@ -179,7 +179,7 @@ var liveProps = map[xml.Name]struct {
 // of one Propstat element.
 func props(ctx context.Context, fs FileSystem, ls LockSystem, name string, pnames []xml.Name) ([]Propstat, error) {
 
-	isDir := true
+	isDir := false
 	var deadProps map[xml.Name]Property
 
 	pstatOK := Propstat{Status: http.StatusOK}
@@ -192,6 +192,13 @@ func props(ctx context.Context, fs FileSystem, ls LockSystem, name string, pname
 		}
 		// Otherwise, it must either be a live property or we don't know it.
 		if prop := liveProps[pn]; prop.findFn != nil && (prop.dir || !isDir) {
+
+			fi := &memFileInfo{
+				name:    name,
+				mode:    os.ModeDir,
+				modTime: time.Now(),
+			}
+
 			innerXML, err := prop.findFn(ctx, fs, ls, name, fi) // fileInfo 用来获取文件名称 等信息
 			if err == ErrNotImplemented {
 				pstatNotFound.Props = append(pstatNotFound.Props, Property{

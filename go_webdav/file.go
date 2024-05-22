@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package webdav
+package go_webdav
 
 import (
 	"context"
@@ -43,6 +43,8 @@ type FileSystem interface {
 	RemoveAll(ctx context.Context, name string) error
 	Rename(ctx context.Context, oldName, newName string) error
 	Stat(ctx context.Context, name string) (os.FileInfo, error)
+	CurrentFileList(ctx context.Context, name string) ([]string, error)
+	SetCurrentBucket(ctx context.Context, bucketName string)
 }
 
 // A File is returned by a FileSystem's OpenFile method and can be served by a
@@ -129,15 +131,6 @@ func (d Dir) Stat(ctx context.Context, name string) (os.FileInfo, error) {
 }
 
 // NewMemFS returns a new in-memory FileSystem implementation.
-func NewMemFS() FileSystem {
-	return &memFS{
-		root: memFSNode{
-			children: make(map[string]*memFSNode),
-			mode:     0660 | os.ModeDir,
-			modTime:  time.Now(),
-		},
-	}
-}
 
 // A memFS implements FileSystem, storing all metadata and actual file data
 // in-memory. No limits on filesystem size are used, so it is not recommended
@@ -759,41 +752,37 @@ func copyFiles(ctx context.Context, fs FileSystem, src, dst string, overwrite bo
 func walkFS(ctx context.Context, fs FileSystem, depth int, name string, info os.FileInfo, walkFn filepath.WalkFunc) error {
 	// This implementation is based on Walk's code in the standard path/filepath package.
 	err := walkFn(name, info, nil)
+	isDir := true
 	if err != nil {
-		if info.IsDir() && err == filepath.SkipDir {
+		if isDir && err == filepath.SkipDir {
 			return nil
 		}
 		return err
 	}
-	if !info.IsDir() || depth == 0 {
+	if !isDir || depth == 0 {
 		return nil
 	}
 	if depth == 1 {
 		depth = 0
 	}
 
-	// Read directory names.
-	f, err := fs.OpenFile(ctx, name, os.O_RDONLY, 0)
-	if err != nil {
-		return walkFn(name, info, err)
-	}
-	fileInfos, err := f.Readdir(0)
-	f.Close()
 	if err != nil {
 		return walkFn(name, info, err)
 	}
 
-	for _, fileInfo := range fileInfos {
-		filename := path.Join(name, fileInfo.Name())
-		fileInfo, err := fs.Stat(ctx, filename)
+	currentFileList, err := fs.CurrentFileList(ctx, name)
+
+	for _, fileInfo := range currentFileList {
+		filename := path.Join(name, fileInfo)
+
 		if err != nil {
-			if err := walkFn(filename, fileInfo, err); err != nil && err != filepath.SkipDir {
+			if err := walkFn(filename, nil, err); err != nil && err != filepath.SkipDir {
 				return err
 			}
 		} else {
-			err = walkFS(ctx, fs, depth, filename, fileInfo, walkFn)
+			err = walkFS(ctx, fs, depth, filename, nil, walkFn)
 			if err != nil {
-				if !fileInfo.IsDir() || err != filepath.SkipDir {
+				if !isDir || err != filepath.SkipDir {
 					return err
 				}
 			}

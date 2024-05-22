@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package webdav
+package go_webdav
 
 // The XML encoding is covered by Section 14.
 // http://www.webdav.org/specs/rfc4918.html#xml.element.definitions
@@ -32,7 +32,7 @@ import (
 	// In the long term, this package should use the standard library's version
 	// only, and the internal fork deleted, once
 	// https://github.com/golang/go/issues/13400 is resolved.
-	ixml "gs/go-webdav/internal/xml"
+	ixml "gs/go_webdav/internal/xml"
 )
 
 // http://www.webdav.org/specs/rfc4918.html#ELEMENT_lockinfo
