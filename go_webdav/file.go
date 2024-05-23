@@ -7,6 +7,7 @@ package go_webdav
 import (
 	"context"
 	"encoding/xml"
+	"github.com/minio/minio-go/v7"
 	"io"
 	"net/http"
 	"os"
@@ -43,9 +44,25 @@ type FileSystem interface {
 	RemoveAll(ctx context.Context, name string) error
 	Rename(ctx context.Context, oldName, newName string) error
 	Stat(ctx context.Context, name string) (os.FileInfo, error)
-	CurrentFileList(ctx context.Context, name string) ([]string, error)
+	CurrentFileList(ctx context.Context, name string) ([]*MinioFileInfo, error)
 	SetCurrentBucket(ctx context.Context, bucketName string)
 }
+
+// MinioFileInfo 实现了 os.FileInfo 接口
+type MinioFileInfo struct {
+	BucketName string
+	Objects    map[string]*minio.ObjectInfo
+	Siz        int64
+	Mod        os.FileMode
+	ModTim     time.Time
+}
+
+func (f *MinioFileInfo) Name() string       { return f.BucketName }
+func (f *MinioFileInfo) Size() int64        { return f.Siz }
+func (f *MinioFileInfo) Mode() os.FileMode  { return f.Mod }
+func (f *MinioFileInfo) ModTime() time.Time { return f.ModTim }
+func (f *MinioFileInfo) IsDir() bool        { return f.Mod.IsDir() }
+func (f *MinioFileInfo) Sys() interface{}   { return nil }
 
 // A File is returned by a FileSystem's OpenFile method and can be served by a
 // Handler.
@@ -773,7 +790,7 @@ func walkFS(ctx context.Context, fs FileSystem, depth int, name string, info os.
 	currentFileList, err := fs.CurrentFileList(ctx, name)
 
 	for _, fileInfo := range currentFileList {
-		filename := path.Join(name, fileInfo)
+		filename := path.Join(name, fileInfo.Name())
 
 		if err != nil {
 			if err := walkFn(filename, nil, err); err != nil && err != filepath.SkipDir {
